@@ -5,13 +5,26 @@ public class Room
 {
     private RectInt area;
     public RectInt Area => area;
+    public Texture2D LayoutTexture { get; }
 
     public Room(RectInt area)
     {
         this.area = area;
     }
 
+    public Room(int x, int y, Texture2D layoutTexture)
+    {
+        area = new RectInt(x, y, layoutTexture.width, layoutTexture.height);
+        LayoutTexture = layoutTexture;
+    }
+
     public List<Hallway> CalculateAllPossibleDoorways(int width, int length, int minDistanceFromEdge)
+    {
+        if (LayoutTexture == null) return CalculateAllPossibleDoorwaysForRectangularRooms(width, length, minDistanceFromEdge);
+        else return CalculateAllPossibleDoorwayPositions(LayoutTexture);
+    }
+
+    public List<Hallway> CalculateAllPossibleDoorwaysForRectangularRooms(int width, int length, int minDistanceFromEdge)
     {
         List<Hallway> hallwayCandidates = new List<Hallway>();
 
@@ -36,5 +49,31 @@ public class Room
         }
         
         return hallwayCandidates;
+    }
+
+    private List<Hallway> CalculateAllPossibleDoorwayPositions(Texture2D layoutTexture)
+    {
+        List<Hallway> possibleHallwayPositions = new List<Hallway>();
+        int width = layoutTexture.width;
+        int height = layoutTexture.height;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                Color pixelColor = layoutTexture.GetPixel(x, y);
+                HallwayDirection direction = GetHallwayDirection(pixelColor);
+                if (direction == HallwayDirection.NONE) continue;
+                Hallway hallway = new Hallway(direction, new Vector2Int(x, y));
+                possibleHallwayPositions.Add(hallway);
+            }
+        }
+        return possibleHallwayPositions;
+    }
+
+    private HallwayDirection GetHallwayDirection(Color color)
+    {
+        Dictionary<Color, HallwayDirection> colorToDirectionMap = HallwayDirectionExtension.GetColorDirectionMap();
+        return colorToDirectionMap.GetValueOrDefault(color, HallwayDirection.NONE);
     }
 }
